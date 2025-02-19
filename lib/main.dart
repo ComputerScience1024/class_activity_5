@@ -16,7 +16,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
   String petName = "Your Pet";
   int happinessLevel = 50;
   int hungerLevel = 50;
-  int energyLevel = 100; // New Energy Bar
+  int energyLevel = 100; // Energy Bar
   String mood = "Neutral";
   Timer? _hungerTimer;
   String selectedActivity = "Rest";
@@ -27,7 +27,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     _startHungerTimer();
   }
 
-  // Function to start hunger timer that increases hunger every 30 seconds
+  // Hunger increases every 30 seconds
   void _startHungerTimer() {
     _hungerTimer = Timer.periodic(Duration(seconds: 30), (timer) {
       setState(() {
@@ -38,8 +38,12 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Function to update happiness and hunger levels
+  // Play increases happiness, reduces energy
   void _playWithPet() {
+    if (energyLevel <= 0) {
+      _showMessage("Your pet is too tired! Let it rest.");
+      return;
+    }
     setState(() {
       happinessLevel = (happinessLevel + 10).clamp(0, 100);
       hungerLevel = (hungerLevel + 5).clamp(0, 100);
@@ -49,6 +53,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
+  // Feed reduces hunger, boosts happiness & energy
   void _feedPet() {
     setState(() {
       hungerLevel = (hungerLevel - 10).clamp(0, 100);
@@ -78,7 +83,7 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Function to check win/loss conditions
+  // Win if happiness >= 80 for 3 mins, lose if hunger 100 & happiness <= 10
   void _checkWinLossConditions() {
     if (happinessLevel >= 80) {
       Future.delayed(Duration(minutes: 3), () {
@@ -93,7 +98,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     }
   }
 
-  // Reset the game after loss
   void _resetGame() {
     setState(() {
       happinessLevel = 50;
@@ -103,7 +107,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  // Show game messages
   void _showMessage(String message) {
     showDialog(
       context: context,
@@ -119,17 +122,21 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     );
   }
 
-  // Function to update pet state based on selected activity
+  // Perform selected activity
   void _performActivity() {
     setState(() {
       if (selectedActivity == "Run") {
         happinessLevel = (happinessLevel + 10).clamp(0, 100);
         energyLevel = (energyLevel - 15).clamp(0, 100);
+        hungerLevel = (hungerLevel + 5).clamp(0, 100);
       } else if (selectedActivity == "Nap") {
         energyLevel = (energyLevel + 20).clamp(0, 100);
       } else if (selectedActivity == "Play Fetch") {
         happinessLevel = (happinessLevel + 15).clamp(0, 100);
         energyLevel = (energyLevel - 10).clamp(0, 100);
+        hungerLevel = (hungerLevel + 5).clamp(0, 100);
+      } else if (selectedActivity == "Rest") {
+        energyLevel = (energyLevel + 5).clamp(0, 100);
       }
       _updateHappiness();
       _checkWinLossConditions();
@@ -158,14 +165,9 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'Name: $petName',
-              style: TextStyle(fontSize: 20.0),
-            ),
-            Text(
-              'Mood: $mood',
-              style: TextStyle(fontSize: 20.0),
-            ),
+            Text('Name: $petName', style: TextStyle(fontSize: 20.0)),
+            Text('Mood: $mood', style: TextStyle(fontSize: 20.0)),
+            SizedBox(height: 16.0),
             Container(
               width: 100,
               height: 100,
@@ -173,16 +175,16 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                 shape: BoxShape.circle,
                 color: petColor,
               ),
+              child: Center(child: Text("🐾", style: TextStyle(fontSize: 50))),
             ),
             SizedBox(height: 16.0),
-            Text('Happiness Level: $happinessLevel', style: TextStyle(fontSize: 20.0)),
-            Text('Hunger Level: $hungerLevel', style: TextStyle(fontSize: 20.0)),
-            Text('Energy Level: $energyLevel', style: TextStyle(fontSize: 20.0)),
+            _buildStatBar("Happiness", happinessLevel, Colors.pink),
+            _buildStatBar("Hunger", hungerLevel, Colors.orange),
+            _buildStatBar("Energy", energyLevel, Colors.blue),
             SizedBox(height: 16.0),
             ElevatedButton(onPressed: _playWithPet, child: Text('Play with Your Pet')),
             ElevatedButton(onPressed: _feedPet, child: Text('Feed Your Pet')),
             SizedBox(height: 16.0),
-            // Pet Name Input Field
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
@@ -198,7 +200,6 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
               ),
             ),
             SizedBox(height: 16.0),
-            // Dropdown for Activity Selection
             DropdownButton<String>(
               value: selectedActivity,
               onChanged: (String? newValue) {
@@ -206,7 +207,8 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
                   selectedActivity = newValue!;
                 });
               },
-              items: ["Rest", "Run", "Nap", "Play Fetch"].map<DropdownMenuItem<String>>((String value) {
+              items: ["Rest", "Run", "Nap", "Play Fetch"]
+                  .map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
                   child: Text(value),
@@ -217,6 +219,23 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
           ],
         ),
       ),
+    );
+  }
+
+  // Reusable widget for displaying stats with progress bars
+  Widget _buildStatBar(String label, int value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$label: $value', style: TextStyle(fontSize: 18)),
+        LinearProgressIndicator(
+          value: value / 100,
+          backgroundColor: Colors.grey[300],
+          color: color,
+          minHeight: 10,
+        ),
+        SizedBox(height: 8),
+      ],
     );
   }
 }
