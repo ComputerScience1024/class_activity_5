@@ -176,14 +176,36 @@ void _showMessage(String message) {
             Text('Mood: $mood', style: TextStyle(fontSize: 20.0)),
             SizedBox(height: 16.0),
             Container(
-              width: 100,
-              height: 100,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: petColor,
+                color: (mood.contains("Neutral") || mood.contains("Unhappy") || mood.contains("Happy")) ? Colors.transparent : petColor,
               ),
-              child: Center(child: Text("🐾", style: TextStyle(fontSize: 50))),
+              child: mood.contains("Neutral")
+                  ? ClipOval(
+                      child: Image.network(
+                        'https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbmdhZ3oyM3d3NWhnaGd3N2c1NGs0encyeGEydWs5ODh2c2M2aTZ0NyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3vR9IEU6nYAmZyoM/giphy.gif',
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : mood.contains("Unhappy")
+                      ? ClipOval(
+                          child: Image.network(
+                            'https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMDY4eTJocjEzc2JycXIxZXNwdzE3MmQxaml3NjVucmhnbXZlaWJ2OCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3269qHKjAEwt0f0tps/giphy.gif',
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : mood.contains("Happy")
+                          ? ClipOval(
+                              child: Image.network(
+                                'https://media.tenor.com/1x0gVPQEEL8AAAAM/dance-chicken-dance.gif',
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Center(child: Text("🐾", style: TextStyle(fontSize: 50))),
             ),
+
             SizedBox(height: 16.0),
             _buildStatBar("Happiness", happinessLevel, Colors.pink),
             _buildStatBar("Hunger", hungerLevel, Colors.orange),
