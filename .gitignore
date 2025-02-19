@@ -43,6 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+<<<<<<< HEAD
 
 # Ignore everything
 /*
@@ -54,3 +55,5 @@ app.*.map.json
 !README.md
 !analysis_options.yaml
 !lib/
+=======
+>>>>>>> ea767560e4137c29aa78b5a50f067b3a44f93a12

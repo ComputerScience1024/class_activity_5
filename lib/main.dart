@@ -3,236 +3,217 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(MaterialApp(
-    home: NameEntryScreen(),
+    home: DigitalPetApp(),
   ));
 }
 
-// Screen to enter pet's name
-class NameEntryScreen extends StatelessWidget {
-  final TextEditingController _nameController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Name Your Pet")),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: "Enter your pet's name",
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (_nameController.text.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DigitalPetApp(
-                          petName: _nameController.text,
-                        ),
-                      ),
-                    );
-                  }
-                },
-                child: Text("Start"),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class DigitalPetApp extends StatefulWidget {
-  final String petName;
-
-  DigitalPetApp({required this.petName});
-
   @override
   _DigitalPetAppState createState() => _DigitalPetAppState();
 }
 
 class _DigitalPetAppState extends State<DigitalPetApp> {
+  String petName = "Your Pet";
   int happinessLevel = 50;
   int hungerLevel = 50;
-  late Timer _hungerTimer;
-  late Timer _winConditionTimer;
-  int _happinessDuration = 0;
-  bool _gameOver = false;
+  int energyLevel = 100; // New Energy Bar
+  String mood = "Neutral";
+  Timer? _hungerTimer;
+  String selectedActivity = "Rest";
 
   @override
   void initState() {
     super.initState();
     _startHungerTimer();
-    _startWinConditionTimer();
   }
 
-  @override
-  void dispose() {
-    _hungerTimer.cancel();
-    _winConditionTimer.cancel();
-    super.dispose();
-  }
-
+  // Function to start hunger timer that increases hunger every 30 seconds
   void _startHungerTimer() {
     _hungerTimer = Timer.periodic(Duration(seconds: 30), (timer) {
-      if (!_gameOver) {
-        setState(() {
-          hungerLevel = (hungerLevel + 5).clamp(0, 100);
-          _updateHappiness();
-          _checkGameOver();
-        });
-      }
+      setState(() {
+        hungerLevel = (hungerLevel + 5).clamp(0, 100);
+        _updateHappiness();
+        _checkWinLossConditions();
+      });
     });
   }
 
-  void _startWinConditionTimer() {
-    _winConditionTimer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (!_gameOver) {
-        if (happinessLevel > 80) {
-          _happinessDuration++;
-          if (_happinessDuration >= 180) {
-            _showDialog("You Win!", "Your pet stayed happy for 3 minutes!");
-            _gameOver = true;
-          }
-        } else {
-          _happinessDuration = 0;
-        }
-      }
-    });
-  }
-
+  // Function to update happiness and hunger levels
   void _playWithPet() {
-    if (_gameOver) return;
     setState(() {
       happinessLevel = (happinessLevel + 10).clamp(0, 100);
-      _updateHunger();
-      _checkGameOver();
+      hungerLevel = (hungerLevel + 5).clamp(0, 100);
+      energyLevel = (energyLevel - 10).clamp(0, 100);
+      _updateHappiness();
+      _checkWinLossConditions();
     });
   }
 
   void _feedPet() {
-    if (_gameOver) return;
     setState(() {
       hungerLevel = (hungerLevel - 10).clamp(0, 100);
+      happinessLevel = (happinessLevel + 5).clamp(0, 100);
+      energyLevel = (energyLevel + 5).clamp(0, 100);
       _updateHappiness();
-      _checkGameOver();
+      _checkWinLossConditions();
     });
   }
 
   void _updateHappiness() {
-    if (hungerLevel >= 80) {
-      happinessLevel = (happinessLevel - 15).clamp(0, 100);
+    if (hungerLevel >= 90) {
+      happinessLevel = (happinessLevel - 20).clamp(0, 100);
     } else if (hungerLevel < 30) {
-      happinessLevel = (happinessLevel + 5).clamp(0, 100);
+      happinessLevel = (happinessLevel + 10).clamp(0, 100);
+    }
+    _updateMood();
+  }
+
+  void _updateMood() {
+    if (happinessLevel > 70) {
+      mood = "Happy 😊";
+    } else if (happinessLevel >= 30) {
+      mood = "Neutral 😐";
+    } else {
+      mood = "Unhappy 😢";
     }
   }
 
-  void _updateHunger() {
-    hungerLevel = (hungerLevel + 5).clamp(0, 100);
-  }
-
-  void _checkGameOver() {
-    if (hungerLevel >= 100 || happinessLevel <= 10) {
-      _showDialog("Game Over", "Your pet is too unhappy or too hungry.");
-      _gameOver = true;
+  // Function to check win/loss conditions
+  void _checkWinLossConditions() {
+    if (happinessLevel >= 80) {
+      Future.delayed(Duration(minutes: 3), () {
+        if (happinessLevel >= 80) {
+          _showMessage("You Win! 🎉 Your pet is very happy!");
+        }
+      });
+    }
+    if (hungerLevel >= 100 && happinessLevel <= 10) {
+      _showMessage("Game Over! Your pet is too hungry and sad. 😭");
+      _resetGame();
     }
   }
 
-  void _showDialog(String title, String message) {
+  // Reset the game after loss
+  void _resetGame() {
+    setState(() {
+      happinessLevel = 50;
+      hungerLevel = 50;
+      energyLevel = 100;
+      mood = "Neutral 😐";
+    });
+  }
+
+  // Show game messages
+  void _showMessage(String message) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+      builder: (context) => AlertDialog(
+        title: Text(message),
         actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              if (_gameOver) Navigator.of(context).pop();
-            },
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
             child: Text("OK"),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Color _getPetColor() {
-    if (happinessLevel > 70) {
-      return Colors.greenAccent;
-    } else if (happinessLevel >= 30) {
-      return Colors.yellowAccent;
-    } else {
-      return Colors.redAccent;
-    }
+  // Function to update pet state based on selected activity
+  void _performActivity() {
+    setState(() {
+      if (selectedActivity == "Run") {
+        happinessLevel = (happinessLevel + 10).clamp(0, 100);
+        energyLevel = (energyLevel - 15).clamp(0, 100);
+      } else if (selectedActivity == "Nap") {
+        energyLevel = (energyLevel + 20).clamp(0, 100);
+      } else if (selectedActivity == "Play Fetch") {
+        happinessLevel = (happinessLevel + 15).clamp(0, 100);
+        energyLevel = (energyLevel - 10).clamp(0, 100);
+      }
+      _updateHappiness();
+      _checkWinLossConditions();
+    });
   }
 
-  String _getMood() {
-    if (happinessLevel > 70) {
-      return "Happy 😄";
-    } else if (happinessLevel >= 30) {
-      return "Neutral 😐";
-    } else {
-      return "Unhappy 😢";
-    }
+  @override
+  void dispose() {
+    _hungerTimer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    Color petColor = Colors.yellow;
+    if (happinessLevel > 70) {
+      petColor = Colors.green;
+    } else if (happinessLevel < 30) {
+      petColor = Colors.red;
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text('Digital Pet')),
-      body: Center(
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text(
+              'Name: $petName',
+              style: TextStyle(fontSize: 20.0),
+            ),
+            Text(
+              'Mood: $mood',
+              style: TextStyle(fontSize: 20.0),
+            ),
             Container(
-              width: 150,
-              height: 150,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
-                color: _getPetColor(),
                 shape: BoxShape.circle,
+                color: petColor,
               ),
-              child: Center(
-                child: Text(
-                  "🐾",
-                  style: TextStyle(fontSize: 80),
+            ),
+            SizedBox(height: 16.0),
+            Text('Happiness Level: $happinessLevel', style: TextStyle(fontSize: 20.0)),
+            Text('Hunger Level: $hungerLevel', style: TextStyle(fontSize: 20.0)),
+            Text('Energy Level: $energyLevel', style: TextStyle(fontSize: 20.0)),
+            SizedBox(height: 16.0),
+            ElevatedButton(onPressed: _playWithPet, child: Text('Play with Your Pet')),
+            ElevatedButton(onPressed: _feedPet, child: Text('Feed Your Pet')),
+            SizedBox(height: 16.0),
+            // Pet Name Input Field
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                onSubmitted: (value) {
+                  setState(() {
+                    petName = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: "Enter Pet Name",
+                  border: OutlineInputBorder(),
                 ),
               ),
             ),
             SizedBox(height: 16.0),
-            Text(
-              'Name: ${widget.petName}',
-              style: TextStyle(fontSize: 20.0),
+            // Dropdown for Activity Selection
+            DropdownButton<String>(
+              value: selectedActivity,
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedActivity = newValue!;
+                });
+              },
+              items: ["Rest", "Run", "Nap", "Play Fetch"].map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
             ),
-            SizedBox(height: 8.0),
-            Text(
-              'Mood: ${_getMood()}',
-              style: TextStyle(fontSize: 20.0),
-            ),
-            SizedBox(height: 16.0),
-            Text('Happiness Level: $happinessLevel'),
-            SizedBox(height: 8.0),
-            Text('Hunger Level: $hungerLevel'),
-            SizedBox(height: 32.0),
-            ElevatedButton(
-              onPressed: _playWithPet,
-              child: Text('Play with Your Pet'),
-            ),
-            SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: _feedPet,
-              child: Text('Feed Your Pet'),
-            ),
+            ElevatedButton(onPressed: _performActivity, child: Text("Perform Activity")),
           ],
         ),
       ),
