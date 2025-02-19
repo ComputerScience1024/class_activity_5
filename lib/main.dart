@@ -107,20 +107,27 @@ class _DigitalPetAppState extends State<DigitalPetApp> {
     });
   }
 
-  void _showMessage(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text("OK"),
-          )
-        ],
-      ),
-    );
-  }
+void _showMessage(String message) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            // Reset game after a win or loss
+            if (message.contains("You Win") || message.contains("Game Over")) {
+              _resetGame();
+            }
+          },
+          child: Text("OK"),
+        )
+      ],
+    ),
+  );
+}
+
 
   // Perform selected activity
   void _performActivity() {
